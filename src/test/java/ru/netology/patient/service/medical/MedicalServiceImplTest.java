@@ -1,3 +1,5 @@
+package ru.netology.patient.service.medical;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -7,21 +9,19 @@ import ru.netology.patient.entity.HealthInfo;
 import ru.netology.patient.entity.PatientInfo;
 import ru.netology.patient.repository.PatientInfoRepository;
 import ru.netology.patient.service.alert.SendAlertServiceImpl;
-import ru.netology.patient.service.medical.MedicalServiceImpl;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-public class HealthCareServiceTest {
+public class MedicalServiceImplTest {
 
     private final PatientInfoRepository patientInfoFileRepository = Mockito.mock(PatientInfoRepository.class);
     private final SendAlertServiceImpl alertService = Mockito.spy(SendAlertServiceImpl.class);
-
     private final MedicalServiceImpl medicalService = new MedicalServiceImpl(patientInfoFileRepository, alertService);
     private final String id = "1";
 
 
-    HealthCareServiceTest(){
+    MedicalServiceImplTest(){
         Mockito.when(patientInfoFileRepository.getById(Mockito.any())).thenReturn(
                 new PatientInfo(id, "Иван", "Петров", LocalDate.of(1980, 11, 26),
                         new HealthInfo(new BigDecimal("36.65"), new BloodPressure(120, 80))));
@@ -37,27 +37,27 @@ public class HealthCareServiceTest {
     }
 
     @Test
-    void temperatureTest(){
+    void lowTemperatureTest(){
         medicalService.checkTemperature(id, new BigDecimal("32.9"));
+
         ArgumentCaptor<String> argLowTemp = ArgumentCaptor.forClass(String.class);
         Mockito.verify(alertService).send(argLowTemp.capture());
         Assertions.assertEquals(String.format("Warning, patient with id: %s, need help", id), argLowTemp.getValue());
+    }
 
-        Mockito.reset(alertService);
-
+    @Test
+    void highTemperatureTest(){
         medicalService.checkTemperature(id, new BigDecimal("37.9"));
+
         ArgumentCaptor<String> argHighTemp = ArgumentCaptor.forClass(String.class);
         Mockito.verify(alertService).send(argHighTemp.capture()); // Ошикба, не обработан вариант когда температура выше 37. Не знаю нужно ли было это проверять)
         Assertions.assertEquals(String.format("Warning, patient with id: %s, need help", id), argHighTemp.getValue());
     }
 
     @Test
-    void MessageTest(){
+    void normalIndicatorsTest(){
         medicalService.checkBloodPressure(id, new BloodPressure(120, 80));
         medicalService.checkTemperature(id, new BigDecimal("36.8"));
         Mockito.verify(alertService, Mockito.never()).send(Mockito.any());
-
     }
-
-
 }
